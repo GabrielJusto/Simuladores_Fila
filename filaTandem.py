@@ -1,4 +1,5 @@
 import random
+import argparse
 
 class Queue:
     total_servers = 0
@@ -86,7 +87,7 @@ class Hbuffer:
 
 class RandomNumbers:
     lst = []
-    def __init__(self, lst = None, seed = 56):
+    def __init__(self, seed,lst = None):
         if lst == None:
             self.generate_list(seed)
         else:
@@ -107,23 +108,24 @@ class RandomNumbers:
         
 
     def get_next(self, range_lim):
-        tico = self.lst.pop(0)
-        print(tico)
-        return float(((range_lim[1] - range_lim[0]) * tico + range_lim[0]))
+        return float(((range_lim[1] - range_lim[0]) * self.lst.pop(0) + range_lim[0]))
         
 
 def entrance(queue, events, scheduler, current_time, h_buffer, randoms):
     #h_buffer.add_new('ENTRANCE', queue.counter, current_time)
 
-    if queue.counter < queue.max_size:
-        queue.counter += 1
-        if queue.counter <= queue.total_servers:
-            event = events['EXIT']
-            scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
-    
-    event = events['ENTRANCE']
-    scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
-    h_buffer.add_new('ENTRANCE', queue.counter, current_time)
+    try:
+        if queue.counter < queue.max_size:
+            queue.counter += 1
+            if queue.counter <= queue.total_servers:
+                event = events['EXIT']
+                scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
+        
+        event = events['ENTRANCE']
+        scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
+        h_buffer.add_new('ENTRANCE', queue.counter, current_time)
+    except:
+        print("Acabaram os números aleatórios, fim da execução!")
 
 def out(queue, events, scheduler, current_time, h_buffer, randoms):
     #h_buffer.add_new('EXIT', queue.counter, current_time)
@@ -135,14 +137,14 @@ def out(queue, events, scheduler, current_time, h_buffer, randoms):
     
     h_buffer.add_new('EXIT', queue.counter, current_time)
 
-def simulate(initial_time, queue, limit_counter, events, lst = None):
+def simulate(initial_time, queue, events, seed, lst = None):
     
     scheduler = Scheduler()
     
     h_buffer = Hbuffer('-', queue, 0)
     
     event = events['ENTRANCE']
-    randoms = RandomNumbers(lst)
+    randoms = RandomNumbers(seed, lst)
     
     scheduler.schedule( event.description, initial_time, 0)
     
@@ -207,12 +209,37 @@ def sa_2(queue_2, scheduler, current_time):
 
 #random.seed(10)
 
+parser = argparse.ArgumentParser(description = "Simulador Simples Primeira Entrega")
+
+parser.add_argument('-arrived', type=str, required = True, help = "O intervalo de tempo para a chegada de clientes na fila. Recebe dois inteiros separados por ','.EX.: 1,2;")
+parser.add_argument('-service', type=str, required = True, help = "o intervalo de tempo de atendimento de um cliente na fila. Recebe dois inteiros separados por ','.EX.: 1,2;")
+parser.add_argument('-servers', type=int, required = True, help = "Quantidade de servidores;")
+parser.add_argument('-capacity', type=int, required = True, help = "Capacidade da fila;")
+parser.add_argument('-seed', type=int, required = False, help = "A semente geradora dos números aleatórios;")
+parser.add_argument('-initial', type=int, required = True, help = "Tempo de chegada do primeiro na fila;")
+parser.add_argument('-list', type=str, required = False, help = "Lista pré-setada de numeros aleatórios.")
+
+
+args = parser.parse_args()
+
+arrived = args.arrived.split(",")
+service = args.service.split(",")
+
+lst = None
+if args.list is not None:
+    lst = [float(i) for i in args.list.split(",")]
+
+seed = 56
+if args.seed is not None:
+    seed = args.seed
+
 psbl_events = {}
-psbl_events['ENTRANCE'] = Event('ENTRANCE', float(1), float(2), 0)
-psbl_events['EXIT'] = Event('EXIT', float(3), float(6), 0)
+psbl_events['ENTRANCE'] = Event('ENTRANCE', float(arrived[0]), float(arrived[1]), 0)
+psbl_events['EXIT'] = Event('EXIT', float(service[0]), float(service[1]), 0)
 
-queue = Queue(1, 5)
+queue = Queue(args.servers, args.capacity)
 
-initial_time = 2
-simulate(initial_time, queue, limit_counter, psbl_events, lst = [0.3276, 0.8851, 0.1643, 0.5542, 0.6813, 0.7221, 0.9881])
+initial_time = args.initial
+simulate(initial_time, queue, psbl_events, seed, lst)
 #simulate(initial_time, queue, limit_counter, psbl_events)
+#[0.3276, 0.8851, 0.1643, 0.5542, 0.6813, 0.7221, 0.9881]
