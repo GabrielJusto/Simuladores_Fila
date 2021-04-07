@@ -1,6 +1,8 @@
 import random
 import argparse
 
+LOST = 0
+
 class Queue:
     total_servers = 0
     max_size = 0
@@ -18,7 +20,7 @@ class Scheduler:
         #print("new event:", (event_desc, float(global_time + sort), float(sort)))
         self.s_buffer.append( (event_desc, float(global_time + sort), float(sort)))
         
-        print(self.s_buffer[len(self.s_buffer)-1])
+        #print(self.s_buffer[len(self.s_buffer)-1])
 
     def next_action(self):
         min_time = float("inf")
@@ -60,6 +62,7 @@ class Hbuffer:
     buff = []
     last_register = ()
     def __init__(self, event, queue, initial_time):
+        self.clean_buffer()
         states = [0] * (queue.max_size + 1)
         self.last_register = (event, queue.counter, initial_time, states )
         self.buff.append(self.last_register)
@@ -85,17 +88,27 @@ class Hbuffer:
     def return_answer(self):
         return self.last_register
 
+    def last_buff_metric(self):
+        l = self.buff[-1]
+        return [l[2]] + [i for i in l[3]]
+    
+    def clean_buffer(self):
+        self.buff = []
+        self.last_register = ()
+
+        
+
 class RandomNumbers:
     lst = []
-    def __init__(self, seed,lst = None):
+    def __init__(self, seed, size ,lst):
         if lst == None:
-            self.generate_list(seed)
+            self.generate_list(seed, size)
         else:
             self.lst = lst
         
 
 
-    def generate_list(self, seed, size = 1000):
+    def generate_list(self, seed, size):
         a = 651
         m = 15619
         c = 4
@@ -113,14 +126,15 @@ class RandomNumbers:
 
 def entrance(queue, events, scheduler, current_time, h_buffer, randoms):
     #h_buffer.add_new('ENTRANCE', queue.counter, current_time)
-
+    global LOST
     try:
         if queue.counter < queue.max_size:
             queue.counter += 1
             if queue.counter <= queue.total_servers:
                 event = events['EXIT']
                 scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
-        
+        else:
+            LOST += 1
         event = events['ENTRANCE']
         scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
         h_buffer.add_new('ENTRANCE', queue.counter, current_time)
@@ -137,17 +151,16 @@ def out(queue, events, scheduler, current_time, h_buffer, randoms):
     
     h_buffer.add_new('EXIT', queue.counter, current_time)
 
-def simulate(initial_time, queue, events, seed, lst = None):
+def simulate(initial_time, queue, events, seed = 0, size = 100, lst = None, print = False):
     
     scheduler = Scheduler()
     
     h_buffer = Hbuffer('-', queue, 0)
     
     event = events['ENTRANCE']
-    randoms = RandomNumbers(seed, lst)
+    randoms = RandomNumbers(seed, size, lst)
     
     scheduler.schedule( event.description, initial_time, 0)
-    
     while(len(randoms.lst) > 0):
         n_action = scheduler.next_action()
         time = n_action[1]
@@ -160,7 +173,10 @@ def simulate(initial_time, queue, events, seed, lst = None):
         elif n_action[0] == 'EXIT':
             out(queue, events, scheduler, time, h_buffer, randoms)
 
-    h_buffer.print_Hbuffer()
+    if print:
+        h_buffer.print_Hbuffer()
+
+    return h_buffer.last_buff_metric()
     
 
 
@@ -215,9 +231,13 @@ parser.add_argument('-arrived', type=str, required = True, help = "O intervalo d
 parser.add_argument('-service', type=str, required = True, help = "o intervalo de tempo de atendimento de um cliente na fila. Recebe dois inteiros separados por ','.EX.: 1,2;")
 parser.add_argument('-servers', type=int, required = True, help = "Quantidade de servidores;")
 parser.add_argument('-capacity', type=int, required = True, help = "Capacidade da fila;")
-parser.add_argument('-seed', type=int, required = False, help = "A semente geradora dos números aleatórios;")
 parser.add_argument('-initial', type=int, required = True, help = "Tempo de chegada do primeiro na fila;")
-parser.add_argument('-list', type=str, required = False, help = "Lista pré-setada de numeros aleatórios.")
+parser.add_argument('-exec_times', type=int, required = True, help = "Quantidade de vezes que irá executar com diferente seeds;")
+parser.add_argument('-seed', type=int, required = False, help = "A semente geradora dos números aleatórios;")
+parser.add_argument('-size', type=int, required = False, help = "Quantidade de numeros aleatórios gerados;")
+parser.add_argument('-list', type=str, required = False, help = "Lista pré-setada de numeros aleatórios;")
+parser.add_argument('-print', help = "Mostrar tabela interia de execução.", action="store_true")
+
 
 
 args = parser.parse_args()
@@ -233,13 +253,39 @@ seed = 56
 if args.seed is not None:
     seed = args.seed
 
+size = 100
+if args.size is not None:
+    size = args.size
+
 psbl_events = {}
 psbl_events['ENTRANCE'] = Event('ENTRANCE', float(arrived[0]), float(arrived[1]), 0)
 psbl_events['EXIT'] = Event('EXIT', float(service[0]), float(service[1]), 0)
 
 queue = Queue(args.servers, args.capacity)
-
 initial_time = args.initial
-simulate(initial_time, queue, psbl_events, seed, lst)
+
+print(args.print)
+
+l = [0] * (queue.max_size+2)
+avg_LOST = 0
+for i in range(args.exec_times):
+    queue = Queue(args.servers, args.capacity)
+    last_buff = simulate(initial_time, queue, psbl_events, seed, size, lst, args.print)
+    for j in range(len(last_buff)):
+        l[j] = last_buff[j] + l[j]
+    print(f'Ultima Linha da execução: {last_buff}')
+    print(f'Seed: {seed}')
+    print(f'Numero de Perdidos: {LOST}')
+    avg_LOST +=LOST 
+    LOST = 0
+    seed = seed + (random.randint((-1)*seed, 100))
+
+    print("")
+
+for i in range(len(l)):
+    l[i] = l[i]/args.exec_times
+
+print(f'Perdidos por não conseguir entrar: {avg_LOST/args.exec_times}')
+print(f'Médias das {args.exec_times} execução: {l}')
 #simulate(initial_time, queue, limit_counter, psbl_events)
 #[0.3276, 0.8851, 0.1643, 0.5542, 0.6813, 0.7221, 0.9881]
