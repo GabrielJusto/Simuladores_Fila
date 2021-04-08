@@ -264,28 +264,33 @@ psbl_events['EXIT'] = Event('EXIT', float(service[0]), float(service[1]), 0)
 queue = Queue(args.servers, args.capacity)
 initial_time = args.initial
 
-print(args.print)
 
 l = [0] * (queue.max_size+2)
 avg_LOST = 0
+# print("{0:^4} {1:<4} {2:^14}".format("I", "Seed", "Time"), end = "")
+# for i in range(queue.max_size+1):
+#     print("{0:^14}".format(i), end = "")
+# print("Lost")
 for i in range(args.exec_times):
     queue = Queue(args.servers, args.capacity)
     last_buff = simulate(initial_time, queue, psbl_events, seed, size, lst, args.print)
+    #print("{0:^4} {1:<4}".format(str(i)+"º",seed), end="")
     for j in range(len(last_buff)):
         l[j] = last_buff[j] + l[j]
-    print(f'Ultima Linha da execução: {last_buff}')
-    print(f'Seed: {seed}')
-    print(f'Numero de Perdidos: {LOST}')
+        #print("{0:^14.5f}".format(last_buff[j]), end="")  
+    #print("  "+str(LOST), end="")
+    print(f"Lost: {LOST}")
     avg_LOST +=LOST 
     LOST = 0
     seed = seed + (random.randint((-1)*seed, 100))
 
     print("")
 
-for i in range(len(l)):
-    l[i] = l[i]/args.exec_times
+print("\nAverage:")
+print("{0:^8} {1:^14}".format("Lost", "Time"), end = "")
+for i in range(len(l)-1):
+    print("{0:^14}".format(i), end = "")
+print("\n{0:^8} {1:^14.5f}".format(avg_LOST/args.exec_times, l[0]/args.exec_times), end = "")
+for i in range(1,len(l)):
+    print("{0:^14.5f}".format(l[i]/args.exec_times), end = "")
 
-print(f'Perdidos por não conseguir entrar: {avg_LOST/args.exec_times}')
-print(f'Médias das {args.exec_times} execução: {l}')
-#simulate(initial_time, queue, limit_counter, psbl_events)
-#[0.3276, 0.8851, 0.1643, 0.5542, 0.6813, 0.7221, 0.9881]
