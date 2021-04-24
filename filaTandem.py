@@ -3,6 +3,50 @@ import argparse
 
 LOST = 0
 
+'''
+   o ---->  o===== 1 ----> o======2
+                     '
+                     '---> saída
+
+FUNÇÃO 1
+queue_1.counter -= 1
+    if queue_1.counter >= queue_1.total_servers:
+        if Sort((0,1)) >= psbl_events['SA1']: <---- saída
+            scheduler.schedule('SA1')
+        else:
+            scheduler.scheduler('P12') <--- próxima entrada
+    
+                      --> saída (10%)
+                     '
+                     '
+    o ---->  o===== 1 ----> o======== 2 (80%)
+                     '
+                     '-->   o======= 3 (10%)
+                     
+
+FUNÇÃO 2
+queue_1.counter -= 1
+    if queue_1.counter >= queue_1.total_servers:
+        if Sort((0,1)) >= psbl_events['P12']: <---- entrada 1
+            scheduler.schedule('SA1')
+        elsif Sort((0,1)) >= psbl_events['P13']::
+            scheduler.scheduler('P12') <--- entrada 2
+        else:
+            scheduler.scheduler('SA1') <--- saída
+
+Q1:{(Q2, 0, 10), (Q3, 11,20),  20:Q3, 0:OUT}
+
+ Q1 {(q2, 10%), () .. }--> 0 - 10
+ Q1 (q3, 10%) --> 10 - 20
+ Q1 (out, 80%) --> 20 - 100
+
+ z > q2 > y > q3 > x > out
+numero = 0.01
+enquanto( element : dicionário)
+    numero >= element.prob():
+        return
+'''
+
 class Queue:
     total_servers = 0
     max_size = 0
@@ -96,8 +140,6 @@ class Hbuffer:
         self.buff = []
         self.last_register = ()
 
-        
-
 class RandomNumbers:
     lst = []
     def __init__(self, seed, size ,lst):
@@ -106,8 +148,6 @@ class RandomNumbers:
         else:
             self.lst = lst
         
-
-
     def generate_list(self, seed, size):
         a = 651
         m = 15619
@@ -119,7 +159,6 @@ class RandomNumbers:
 
             self.lst.append(U)
         
-
     def get_next(self, range_lim):
         return float(((range_lim[1] - range_lim[0]) * self.lst.pop(0) + range_lim[0]))
         
@@ -141,6 +180,31 @@ def entrance(queue, events, scheduler, current_time, h_buffer, randoms):
     except:
         print("Acabaram os números aleatórios, fim da execução!")
 
+###Adicionei Esse método
+def tandem(queue_1, queue_2, events, scheduler, current_time, h_buffer, randoms):
+    global DIC
+    queue_1.counter-=1
+    if queue_1.counter >= queue_1.total_servers:
+        if randoms.get_next(event.range()) < DIC[(queue_1,queue_2)]:
+            event = events["TANDEM"]
+            scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
+        else:
+            event = events["EXIT"]
+            scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
+
+
+    if queue_2.counter < queue_2.max_size:
+        queue_2.counter += 1
+        if queue_2.counter <= queue_2.total_servers:
+            event = events['EXIT']
+            scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
+    else:
+        LOST += 1
+
+     h_buffer.add_new('TANDEM', queue_2.counter, current_time)
+    
+    
+### Não alterei Para 
 def out(queue, events, scheduler, current_time, h_buffer, randoms):
     #h_buffer.add_new('EXIT', queue.counter, current_time)
 
@@ -172,6 +236,10 @@ def simulate(initial_time, queue, events, seed = 0, size = 100, lst = None, prin
             
         elif n_action[0] == 'EXIT':
             out(queue, events, scheduler, time, h_buffer, randoms)
+        
+        elif n_action[0] == 'TANDEM':
+            ...
+
 
     if print:
         h_buffer.print_Hbuffer()
@@ -179,8 +247,6 @@ def simulate(initial_time, queue, events, seed = 0, size = 100, lst = None, prin
     return h_buffer.last_buff_metric()
     
 
-
-'''
 def ch_1(queue_1, scheduler, current_time):
     
     last_register = h_buffer
@@ -192,7 +258,7 @@ def ch_1(queue_1, scheduler, current_time):
                 scheduler.schedule('SA1')
             else:
                 scheduler.schedule('P12')
-        
+
     scheduler.schedule('CH1')
 
 def  sa_1(queue_1, scheduler, current_time):
@@ -220,8 +286,6 @@ def sa_2(queue_2, scheduler, current_time):
     queue_2.counter -= 1
     if queue_2.counter >= queue_2.total_servers:
         scheduler.schedule('SA2')
-
-'''
 
 #random.seed(10)
 
