@@ -69,7 +69,7 @@ class Queue:
         self.maxArrival = maxArrival
         self.minService = minService
         self.maxService = maxService
-        self.buffer = Hbuffer(self.name,self.max_size)
+        self.buffer = Hbuffer(self.name,self.max_size, self.counter)
 
     def __str__(self):
         return 'name: ' + self.name + '\ncapacity: ' + str(self.max_size) +  '\nsize queue: ' +  str(self.counter)+'\nservers: ' + str(self.total_servers) +'\narrival time: ' + str(self.minArrival) + '-' + str(self.maxArrival) + 's' + '\nservice time: ' +  str(self.minService) + '-' +  str(self.maxService) + 's\n'
@@ -132,17 +132,23 @@ class Event:
 class Hbuffer:
     buff = []
     last_register = ()
-    def __init__(self, name, max_size):
+    def __init__(self, name, max_size, count):
         self.clean_buffer()
         states = [0] * (max_size + 1)
-        self.last_register = (name, Queue.static_time, states, "-")
+        self.last_register = (name, count, Queue.static_time, states, "-")
         self.buff.append(self.last_register)
 
     def add_new(self, name, queue_count, current_time, funtion, target):
         #print(event + ' queue count ', queue_count)
+        print(funtion, target)
+        print(Queue.static_time, type(Queue.static_time))
         Queue.static_time += (current_time) - Queue.static_time
+        print(self.last_register)
 
         new_states =  self.last_register[3][:]
+        print(new_states, type(new_states))
+
+        print("\n")
         new_states[self.last_register[1]] = Queue.static_time
 
         description = ""
@@ -230,7 +236,7 @@ class Topology:
             output += '\n'
         return output
         
-def GetNextDestiny(source_name, list_queues):
+def GetNextDestiny(source_name, list_queues, randoms):
     random_number = randoms.get_next(0, 1)
     accumulator_1 = 0
     accumulator_2 = 0
@@ -300,39 +306,49 @@ def GetNextDestiny(source_name, list_queues):
 
 def Entrance(queue, Scheduler, current_time, randoms, topo):
 
-    if queue.counter <= queue.max_size:
-        queue.counter += 1
-        if queue.counter >= queue.total_servers:
-            destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name))
-            Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService))
-    Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival))
+    try:
+        if queue.counter < queue.max_size:
+            queue.counter += 1
+            if queue.counter <= queue.total_servers:
+                destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), randoms)
+                Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService))
+        Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival))
+                
+        queue.add_new("entrance", current_time)
+    except:
+        print("Terminou a lista de aleatórios!")
 
-    queue.add_new("entrance", current_time)
     
 
 
 def Exit(queue, Scheduler, current_time ,randoms, topo):
-    queue.counter-=1
-    if queue.counter >= queue.total_servers:
-        destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name)) 
-        Scheduler.schedule(queue.name, destiny, current_time,  randoms.get_next(queue.minService, queue.maxService))
+    try:
+        queue.counter-=1
+        if queue.counter >= queue.total_servers:
+            destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), randoms) 
+            Scheduler.schedule(queue.name, destiny, current_time,  randoms.get_next(queue.minService, queue.maxService))
 
-    queue.buffer.add_new("exit",current_time)
+        queue.add_new("exit",current_time)
+    except:
+        print("Terminou a lista de aleatórios!")
 
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
-    queue_source.counter -=1
+    try:
+        queue_source.counter -=1
 
-    if queue_source.counter <= queue_source.total_servers:
-        destiny = GetNextDestiny(queue_source.name, topo.GetTargets(queue_source.name))
-        Scheduler.schedule(queue_source.name, destiny, current_time,  randoms.get_next(queue_source.minService, queue_source.maxService))
-    
+        if queue_source.counter >= queue_source.total_servers:
+            destiny = GetNextDestiny(queue_source.name, topo.GetTargets(queue_source.name), randoms)
+            Scheduler.schedule(queue_source.name, destiny, current_time,  randoms.get_next(queue_source.minService, queue_source.maxService))
+        
+        if queue_target.counter < queue_target.max_size:
+            queue_target.counter += 1
+            if queue_target.counter <= queue_target.total_servers:
+                destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), randoms)
+                Scheduler.schedule(queue_target.name, destiny, current_time,  randoms.get_next(queue_target.minService, queue_target.maxService))
 
-    queue_target.counter += 1
-    if queue_target.counter >= queue_target.servers:
-        destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name))
-        Scheduler.schedule(queue_target.name, destiny, current_time,  randoms.get_next(queue_target.minService, queue_target.maxService))
-
-    queue_source.buffer.add_new("tandem",current_time, queue_target.name)
+        queue_source.add_new("tandem",current_time, queue_target.name)
+    except:
+        print("Terminou os Aleatórios!")
 
     #entrada
     #Saida
@@ -348,7 +364,7 @@ def search_entrances(queues):
     return entrances
 
 
-def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, print = False):
+def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt = False):
 
     scheduler = Scheduler()
     
@@ -377,7 +393,7 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, print
         queues[key].buffer.print_Hbuffer()
         print("\n")
 
-    if print:
+    if prt:
         h_buffer.print_Hbuffer()
 
     #return h_buffer.last_buff_metric()
