@@ -73,7 +73,7 @@ class Queue:
         self.maxService = maxService
 
     def __str__(self):
-        return 'name: ' + self.name + '\ncapacity: ' + str(self.capacity) + '\nsize queue: ' + str(self.counter)+ '\nservers: ' + str(self.servers) + '\narrival time: ' + str(self.minArrival) + '-' + str(self.maxArrival) + 's' + '\nservice time: ' + str(self.minService) + '-' + str(self.maxService) + 's\n'
+        return 'name: ' + self.name + '\ncapacity: ' + str(self.capacity) +  '\nsize queue: ' +  str(self.counter)+'\nservers: ' + str(self.servers) +'\narrival time: ' + str(self.minArrival) + '-' + str(self.maxArrival) + 's' + '\nservice time: ' +  str(self.minService) + '-' +  str(self.maxService) + 's\n'
         
 #estrutura para guardar a topologia das filas, 
 #     a saída da fila representa o resto das probabilidades
@@ -83,10 +83,12 @@ class Topology:
     def Append(self, source, target, prob):
         if not source in self.topo:
             self.topo[source] = []
-
         self.topo[source].append( (target, prob) )
+
     def GetTargets(self, source):
         return self.topo[source]
+
+    #topo[source][]
 
     def __str__(self):
         output = '### Topology ###\n'
@@ -212,6 +214,7 @@ randoms = RandomNumbers(40, 40, None)
 
 
 Entrance(ticket, Scheduler, randoms, topology)
+
 Entrance(ticket, Scheduler, randoms, topology)
 Entrance(ticket, Scheduler, randoms, topology)
 Entrance(ticket, Scheduler, randoms, topology)
