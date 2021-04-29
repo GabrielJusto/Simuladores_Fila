@@ -5,20 +5,52 @@ Victor Scherer Putrich
 
 Turma: 128
 
-run: python.exe filasTandem.py 'comandos'
-Ex: python.exe filaTandem.py -arrived 2,4 -service 3,5 -servers 2 -exec_times 5 -capacity 5 -initial 3 -seed 63 -size 10 -print
+run: python.exe filasTandem.py 
 
-Comandos:
--h -> Help, tudo isso está escrito lá;
--arrived -> O intervalo de tempo para a chegada de clientes na fila. Recebe dois inteiros separados por ','.EX.: 1,2;
--service -> O intervalo de tempo de atendimento de um cliente na fila. Recebe dois inteiros separados por ','.EX.: 1,2;
--servers -> Quantidade de servidores;
--capacity -> Capacidade da fila;
--initial -> Tempo de chegada do primeiro na fila;
--exec_times -> Quantidade de vezes que irá executar com diferente seeds;
--seed -> A semente geradora dos números aleatórios;
--size -> Quantidade de numeros aleatórios gerados;
--list -> Lista pré-setada de numeros aleatórios;
--print -> Mostrar tabela interia de execução.
+Tem um menu que vai pedir informações igual a esses exemplos:
 
--seed, -size e -list não são obrigatórios
+Exemplo 1 fila
+|
+| Numero de Filas:
+| 1
+| Fila 1:
+| Numero de Servidores: 2
+| Capacidade: 5
+| Min Serviço: 3
+| Max Serviço: 8
+| Como é a primeira fila:
+| Min Chegada: 2
+| Max Chegada: 3
+| Qual a seed: 12
+| Tempo inicial para chegada: 2
+|
+
+Exemplo 2 filas:
+
+| Numero de Filas:
+| 2
+| Fila 1:
+| Numero de Servidores: 3
+| Capacidade: 3
+| Min Serviço: 2
+| Max Serviço: 5
+| Como é a primeira fila:
+| Min Chegada: 2
+| Max Chegada: 3
+| Fila 2:
+| Numero de Servidores: 1
+| Capacidade: 3
+| Min Serviço: 3
+| Max Serviço: 5
+| 
+| Topologia(Digite Apenas o numeros)
+| De qual Fila Sai?
+| 1
+| Pra qual Fila entra?
+| 2
+| Qual a probabilidade?(numero entre 0 e 1)
+| 1
+| Terminou!(reponder y ou n)
+| y
+| Qual a seed: 45
+| Tempo inicial para chegada: 2.5

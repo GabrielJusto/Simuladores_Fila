@@ -79,11 +79,12 @@ class Queue:
 
 class Scheduler:
     s_buffer = []
+    str_buffer = []
     
     def schedule(self, queue_source, queue_target, global_time, sort):
         #print("new event:", (event_desc, float(global_time + sort), float(sort)))
         self.s_buffer.append((queue_source, queue_target, float(global_time + sort), float(sort)))
-        
+        self.str_buffer.append((queue_source, queue_target, float(global_time + sort), float(sort)))
         #print(self.s_buffer[len(self.s_buffer)-1])
 
     def next_action(self):
@@ -103,11 +104,30 @@ class Scheduler:
             print("Erro index not found:", min_index)
             return None
     
-    def __str__(self):
-        output = ''
-        for i in self.s_buffer:
-            output += str(i) + '\n'
-        return output
+    # def __str__(self):
+    #     output = ''
+    #     for i in self.s_buffer:
+    #         output += str(i) + '\n'
+    #     return output
+    
+    def print_scheduler(self):
+        #output = ""
+        i = 1
+        for action in self.str_buffer:
+            # print("{0:<35} {1:>6} {2:>9,.3f}  [".format(i[4],i[1],i[2]), end="")
+            if action[0] == None and "exit" not in action[1]:
+                print("("+str(i)+")entr {0:<15} {1:>6,.4f} {2:>9,.4f}".format(action[1], action[2],action[3]))
+                #output += "("+str(i)+")"+"entrance "+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
+                
+            elif not "exit" in action[1] and not "exit" in action[0]:
+                print("("+str(i)+"){0:<1}-> {1:<15} {2:>6,.4f} {3:>9,.4f}".format(action[0],action[1], action[2],action[3]))
+                #output += "("+str(i)+")"+str(action[0])+" -> "+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
+            
+            else:
+                #output += "("+str(i)+")"+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
+                print("("+str(i)+"){0:<20} {1:>6,.4f} {2:>9,.4f}".format(action[1], action[2],action[3]))
+            i+=1
+    
 
 '''
 class Event:
@@ -275,60 +295,9 @@ def GetNextDestiny(source_name, list_queues, random_number):
     return 'exit ' + source_name
 
 
-# def entrance(queue, events, scheduler, current_time, h_buffer, randoms):
-#     #h_buffer.add_new('ENTRANCE', queue.counter, current_time)
-#     global LOST
-#     try:
-#         if queue.counter < queue.max_size:
-#             queue.counter += 1
-#             if queue.counter <= queue.total_servers:
-#                 event = events['EXIT']
-#                 scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
-#         else:
-#             LOST += 1
-#         event = events['ENTRANCE']
-#         scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
-#         h_buffer.add_new('ENTRANCE', queue.counter, current_time)
-#     except:
-#         print("Acabaram os números aleatórios, fim da execução!")
-
-# ###Adicionei Esse método
-# def tandem(queue_1, queue_2, events, scheduler, current_time, h_buffer, randoms):
-#     global DIC
-#     queue_1.counter-=1
-#     if queue_1.counter >= queue_1.total_servers:
-#         if randoms.get_next(event.range()) < DIC[(queue_1,queue_2)]:
-#             event = events["TANDEM"]
-#             scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
-#         else:
-#             event = events["EXIT"]
-#             scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
-
-
-#     if queue_2.counter < queue_2.max_size:
-#         queue_2.counter += 1
-#         if queue_2.counter <= queue_2.total_servers:
-#             event = events['EXIT']
-#             scheduler.schedule(event.description , current_time, randoms.get_next(event.range()))
-#     else:
-#         LOST += 1
-
-#      h_buffer.add_new('TANDEM', queue_2.counter, current_time)
-    
-    
-# ### Não alterei Para 
-# def out(queue, events, scheduler, current_time, h_buffer, randoms):
-#     #h_buffer.add_new('EXIT', queue.counter, current_time)
-
-#     queue.counter-=1
-#     if queue.counter >= queue.total_servers:
-#         event = events['EXIT']
-#         scheduler.schedule(event.description, current_time, randoms.get_next(event.range()))
-    
-#     h_buffer.add_new('EXIT', queue.counter, current_time)
 
 def Entrance(queue, Scheduler, current_time, randoms, topo):
-
+    global LOST
     try:
         if queue.counter < queue.max_size:
             queue.counter += 1
@@ -338,9 +307,10 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
                 destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), random_number)
                 Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService, random_number))
 
-        Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival, randoms.lst.pop(0)))
+        else:
+            LOST += 1
                 
-        
+        Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival, randoms.lst.pop(0)))
     except:
         print("Terminou a lista de aleatórios!")
 
@@ -350,6 +320,7 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
 
 
 def Exit(queue, Scheduler, current_time ,randoms, topo):
+    global LOST
     try:
         queue.counter-=1
         if queue.counter >= queue.total_servers:
@@ -361,6 +332,7 @@ def Exit(queue, Scheduler, current_time ,randoms, topo):
     queue.add_new("exit",current_time)
 
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
+    global LOST
     try:
         queue_source.counter -=1
 
@@ -375,7 +347,8 @@ def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
                 random_number = randoms.lst.pop(0)
                 destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), random_number)
                 Scheduler.schedule(queue_target.name, destiny, current_time, randoms.get_next(queue_target.minService, queue_target.maxService, random_number))
-
+        else:
+            LOST += 1
     except:
         print("Terminou os Aleatórios!")
 
@@ -422,12 +395,10 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
     for entrance in entrances:
         scheduler.schedule(None, entrance.name, initial_time, 0)
     
-    while(len(randoms.lst) > 0):
+    while(len(randoms.lst) > 0):   
         n_action = scheduler.next_action()
         time = n_action[2]
 
-        #if tempo > tempo_lim: 
-        #    break
 
         if n_action[0] == None and "exit" not in n_action[1]:
             Entrance(queues[n_action[1]], scheduler, time, randoms, topo)
@@ -443,28 +414,71 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
         queues[key].buffer.print_Hbuffer()
         print("\n")
 
-    if prt:
-        h_buffer.print_Hbuffer()
+    scheduler.print_scheduler()
 
+    print(f"Processos Perdidos: {LOST}")
     
-    #return h_buffer.last_buff_metric()
-    
-#def __init__(self, name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0):
 
 queues = {}
-
-queues["Q1"] = Queue('Q1', 2, 3, 2, 5, 2, 3)
-queues["Q2"] = Queue('Q2', 1, 3, 3, 5)
-
-
 topology = Topology()
-topology.Append(queues["Q1"].name, queues["Q2"].name, 1)
-topology.Append(queues["Q2"].name, "", 0)
+
+# queues["Q1"] = Queue('Q1', 2, 3, 2, 5, 2, 3)
+# queues["Q2"] = Queue('Q2', 1, 3, 3, 5)
 
 
-lst = [0.9921, 0.0004, 0.5534, 0.2761, 0.3398, 0.8963, 0.9023, 0.0132, 0.4569, 0.5121, 0.9208, 0.0171, 0.2299, 0.8545, 0.6001, 0.2921]
+# topology.Append(queues["Q1"].name, queues["Q2"].name, 1)
+# topology.Append(queues["Q2"].name, "", 0)
 
-Simulate(2.5, queues, topology, lst = lst.copy())
+# Simulate(2.5, queues, topology, seed = 388)  
+
+n_queue = int(input("Numero de Filas:\n"))
+serv = 0
+cap = 0
+minArr = 0
+maxArr = 0
+minServ = 0
+maxServ = 0
+
+for i in range(n_queue):
+    print(f'Fila {i+1}:')
+    serv = int(input("Numero de Servidores: "))
+    cap = int(input("Capacidade: "))
+    minServ = float(input("Min Serviço: "))
+    minServ = float(input("Max Serviço: "))
+    if i == 0:
+        print("Como é a primeira fila:")
+        minArr = float(input("Min Chegada: "))
+        minArr = float(input("Max Chegada: "))
+    queues["Q"+str(i+1)] = Queue("Q"+str(i+1),serv,cap,minServ, maxServ, minArr, maxArr)
+    minArr = 0
+    maxArr = 0
+q_1 = ""
+q_2 = ""
+perc = 0
+x = ""
+control = True
+
+if n_queue > 1:
+    while(control):
+        print("\nTopologia(Digite Apenas o numeros)")
+        q_1 = input("De qual Fila Sai?\n")
+        q_2 = input("Pra qual Fila entra?\n")
+        perc = float(input("Qual a probabilidade?(numero entre 0 e 1)\n"))
+        x = input("Terminou a Topologia!(reponder y ou n)\n")
+        if x.upper() == "Y":
+            control = False
+        topology.Append(queues["Q"+q_1].name, queues["Q"+q_2].name, perc)
+
+for q in queues:
+     topology.Append(queues[q].name, "", 0)
+
+
+seed = int(input("Qual a seed: "))
+
+int_time = float(input("Tempo inicial para chegada: "))
+
+Simulate(int_time, queues, topology, seed = seed)   
+        
 
 # queues["Ticket"] = Queue('Ticket', 4, 2, 2, 5, 3, 4)
 # queues["Student Service"] = Queue('Student Service', 3, 1, 5, 7)
@@ -478,74 +492,3 @@ Simulate(2.5, queues, topology, lst = lst.copy())
 
 # Simulate(2.0, queues, topology)
 
-#random.seed(10)
-'''
-parser = argparse.ArgumentParser(description = "Simulador Simples Primeira Entrega")
-
-parser.add_argument('-arrived', type=str, required = True, help = "O intervalo de tempo para a chegada de clientes na fila. Recebe dois inteiros separados por ','.EX.: 1,2;")
-parser.add_argument('-service', type=str, required = True, help = "o intervalo de tempo de atendimento de um cliente na fila. Recebe dois inteiros separados por ','.EX.: 1,2;")
-parser.add_argument('-servers', type=int, required = True, help = "Quantidade de servidores;")
-parser.add_argument('-capacity', type=int, required = True, help = "Capacidade da fila;")
-parser.add_argument('-initial', type=int, required = True, help = "Tempo de chegada do primeiro na fila;")
-parser.add_argument('-exec_times', type=int, required = True, help = "Quantidade de vezes que irá executar com diferente seeds;")
-parser.add_argument('-seed', type=int, required = False, help = "A semente geradora dos números aleatórios;")
-parser.add_argument('-size', type=int, required = False, help = "Quantidade de numeros aleatórios gerados;")
-parser.add_argument('-list', type=str, required = False, help = "Lista pré-setada de numeros aleatórios;")
-parser.add_argument('-print', help = "Mostrar tabela interia de execução.", action="store_true")
-
-
-
-args = parser.parse_args()
-
-arrived = args.arrived.split(",")
-service = args.service.split(",")
-
-lst = None
-if args.list is not None:
-    lst = [float(i) for i in args.list.split(",")]
-
-seed = 56
-if args.seed is not None:
-    seed = args.seed
-
-size = 100
-if args.size is not None:
-    size = args.size
-
-psbl_events = {}
-psbl_events['ENTRANCE'] = Event('ENTRANCE', float(arrived[0]), float(arrived[1]), 0)
-psbl_events['EXIT'] = Event('EXIT', float(service[0]), float(service[1]), 0)
-
-queue = Queue(args.servers, args.capacity)
-initial_time = args.initial
-
-
-l = [0] * (queue.max_size+2)
-avg_LOST = 0
-# print("{0:^4} {1:<4} {2:^14}".format("I", "Seed", "Time"), end = "")
-# for i in range(queue.max_size+1):
-#     print("{0:^14}".format(i), end = "")
-# print("Lost")
-for i in range(args.exec_times):
-    queue = Queue(args.servers, args.capacity)
-    last_buff = simulate(initial_time, queue, psbl_events, seed, size, lst, args.print)
-    #print("{0:^4} {1:<4}".format(str(i)+"º",seed), end="")
-    for j in range(len(last_buff)):
-        l[j] = last_buff[j] + l[j]
-        #print("{0:^14.5f}".format(last_buff[j]), end="")  
-    #print("  "+str(LOST), end="")
-    print(f"Lost: {LOST}")
-    avg_LOST +=LOST 
-    LOST = 0
-    seed = seed + (random.randint((-1)*seed, 100))
-
-    print("")
-
-print("\nAverage:")
-print("{0:^8} {1:^14}".format("Lost", "Time"), end = "")
-for i in range(len(l)-1):
-    print("{0:^14}".format(i), end = "")
-print("\n{0:^8} {1:^14.5f}".format(avg_LOST/args.exec_times, l[0]/args.exec_times), end = "")
-for i in range(1,len(l)):
-    print("{0:^14.5f}".format(l[i]/args.exec_times), end = "")
-'''
