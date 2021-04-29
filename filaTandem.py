@@ -50,7 +50,7 @@ enquanto( element : dicionário)
 class Queue:
     #static
     static_time = 0
-    
+     
     name = ""
     total_servers = 0
     max_size = 0
@@ -74,8 +74,8 @@ class Queue:
     def __str__(self):
         return 'name: ' + self.name + '\ncapacity: ' + str(self.max_size) +  '\nsize queue: ' +  str(self.counter)+'\nservers: ' + str(self.total_servers) +'\narrival time: ' + str(self.minArrival) + '-' + str(self.maxArrival) + 's' + '\nservice time: ' +  str(self.minService) + '-' +  str(self.maxService) + 's\n'
 
-    def add_new(self, function, current_time, target = None):
-        self.buffer.add_new(self.name, self.counter, current_time, function, target)
+    def add_new(self, function, current_time, s_queue = None, order = True):
+        self.buffer.add_new(self.name, self.counter, current_time, function,s_queue, order)
 
 class Scheduler:
     s_buffer = []
@@ -130,6 +130,8 @@ class Event:
 '''
 
 class Hbuffer:
+    lst_ordem = []
+
     buff = []
     last_register = ()
     def __init__(self, name, max_size, count):
@@ -138,23 +140,39 @@ class Hbuffer:
         self.last_register = (name, count, Queue.static_time, states, "-")
         self.buff.append(self.last_register)
 
-    def add_new(self, name, queue_count, current_time, funtion, target):
-        #print(event + ' queue count ', queue_count)
-        print(funtion, target)
-        print(Queue.static_time, type(Queue.static_time))
-        Queue.static_time += (current_time) - Queue.static_time
-        print(self.last_register)
+    def add_new(self, name, queue_count, current_time, funtion, s_queue, order):
+        # print(event + ' queue count ', queue_count)
+        # print(funtion, target)
 
+        diff = 0
+        if order:
+            if self.last_register[-1] == '-':
+                diff = current_time
+            else:    
+                diff = current_time - Queue.static_time
+            Queue.static_time += diff
+        else:
+            if self.last_register[-1] == '-':
+                diff = current_time
+            else:    
+                diff = current_time - self.last_register[2]
+
+        
+        # print(self.last_register)
+        
         new_states =  self.last_register[3][:]
-        print(new_states, type(new_states))
+        # print(new_states, type(new_states))
 
-        print("\n")
-        new_states[self.last_register[1]] = Queue.static_time
+        # print("\n")
+        new_states[self.last_register[1]] += diff
 
         description = ""
 
         if funtion == "tandem":
-            description += name + " -> "+ target
+            if order:
+                description += name + " -> "+ s_queue
+            else:
+                description += s_queue + " -> "+ name
         else:
             description += funtion + " " + name
 
@@ -162,10 +180,12 @@ class Hbuffer:
         self.buff.append(new_register)
         self.last_register = new_register
 
+        Hbuffer.lst_ordem.append(description)
+    
 
     def print_Hbuffer(self):
         for i in self.buff:
-            print("{0:^8} {1:>6} {2:>9,.3f}  [".format(i[4],i[1],i[2]), end="")
+            print("{0:<35} {1:>6} {2:>9,.3f}  [".format(i[4],i[1],i[2]), end="")
         #print(i[0] + " " + str(i[1]) + " " + str( round(i[2], 3) ), end = "")
             for j in i[3]:
                 print(" {0:^6,.3f} ".format(j), end="")
@@ -185,11 +205,14 @@ class Hbuffer:
 
 class RandomNumbers:
     lst = []
+    ast = False
+
     def __init__(self, seed, size ,lst):
         if lst == None:
             self.generate_list(seed, size)
         else:
             self.lst = lst
+            self.ast = True
         
     def generate_list(self, seed, size):
         a = 651
@@ -202,8 +225,9 @@ class RandomNumbers:
 
             self.lst.append(U)
         
-    def get_next(self, minArrival, maxArrival):
-        return float(((maxArrival - minArrival) * self.lst.pop(0) + minArrival))
+    def get_next(self, minArrival, maxArrival, value):
+        return float(((maxArrival - minArrival) * value + minArrival))
+    
 
 class Topology:
     topo = {} #source: list (target, probability)
@@ -236,8 +260,7 @@ class Topology:
             output += '\n'
         return output
         
-def GetNextDestiny(source_name, list_queues, randoms):
-    random_number = randoms.get_next(0, 1)
+def GetNextDestiny(source_name, list_queues, random_number):
     accumulator_1 = 0
     accumulator_2 = 0
 
@@ -309,14 +332,19 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
     try:
         if queue.counter < queue.max_size:
             queue.counter += 1
-            if queue.counter <= queue.total_servers:
-                destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), randoms)
-                Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService))
-        Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival))
+            if queue.counter <= queue.total_servers:                
+                random_number = randoms.lst.pop(0)
                 
-        queue.add_new("entrance", current_time)
+                destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), random_number)
+                Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService, random_number))
+
+        Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival, randoms.lst.pop(0)))
+                
+        
     except:
         print("Terminou a lista de aleatórios!")
+
+    queue.add_new("entrance", current_time)
 
     
 
@@ -325,34 +353,39 @@ def Exit(queue, Scheduler, current_time ,randoms, topo):
     try:
         queue.counter-=1
         if queue.counter >= queue.total_servers:
-            destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), randoms) 
-            Scheduler.schedule(queue.name, destiny, current_time,  randoms.get_next(queue.minService, queue.maxService))
-
-        queue.add_new("exit",current_time)
+            random_number = randoms.lst.pop(0)
+            destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), random_number) 
+            Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService, random_number))
     except:
         print("Terminou a lista de aleatórios!")
+    queue.add_new("exit",current_time)
 
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
     try:
         queue_source.counter -=1
 
         if queue_source.counter >= queue_source.total_servers:
-            destiny = GetNextDestiny(queue_source.name, topo.GetTargets(queue_source.name), randoms)
-            Scheduler.schedule(queue_source.name, destiny, current_time,  randoms.get_next(queue_source.minService, queue_source.maxService))
-        
+            random_number = randoms.lst.pop(0)
+            destiny = GetNextDestiny(queue_source.name, topo.GetTargets(queue_source.name), random_number)
+            Scheduler.schedule(queue_source.name, destiny, current_time,  randoms.get_next(queue_source.minService, queue_source.maxService, random_number))
+
         if queue_target.counter < queue_target.max_size:
             queue_target.counter += 1
             if queue_target.counter <= queue_target.total_servers:
-                destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), randoms)
-                Scheduler.schedule(queue_target.name, destiny, current_time,  randoms.get_next(queue_target.minService, queue_target.maxService))
+                random_number = randoms.lst.pop(0)
+                destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), random_number)
+                Scheduler.schedule(queue_target.name, destiny, current_time, randoms.get_next(queue_target.minService, queue_target.maxService, random_number))
 
-        queue_source.add_new("tandem",current_time, queue_target.name)
     except:
         print("Terminou os Aleatórios!")
+
+    queue_source.add_new("tandem",current_time, queue_target.name, order = True)
+    queue_target.add_new("tandem",current_time, queue_source.name, order = False)
 
     #entrada
     #Saida
     #Q1 -> Q2
+
 
 def search_entrances(queues):
     entrances = []
@@ -362,6 +395,20 @@ def search_entrances(queues):
             entrances.append(queues[key])
 
     return entrances
+
+def last_resgister_buff(queues):
+    higher = 0
+    high_q = None
+    for queue in queues:
+        if queues[queue].buffer.last_register[2] > higher:
+            higher = queues[queue].buffer.last_register[2]
+            high_q = queues[queue]
+
+    for queue in queues:
+        if queues[queue] != high_q:
+            queues[queue].add_new("END", higher, order= False)
+        
+
 
 
 def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt = False):
@@ -374,9 +421,11 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
     entrances  = search_entrances(queues)
     for entrance in entrances:
         scheduler.schedule(None, entrance.name, initial_time, 0)
+    
     while(len(randoms.lst) > 0):
         n_action = scheduler.next_action()
         time = n_action[2]
+
         #if tempo > tempo_lim: 
         #    break
 
@@ -389,6 +438,7 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
         else:
             Exit(queues[n_action[0]], scheduler, time, randoms, topo)
 
+    last_resgister_buff(queues)
     for key in queues:
         queues[key].buffer.print_Hbuffer()
         print("\n")
@@ -396,23 +446,37 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
     if prt:
         h_buffer.print_Hbuffer()
 
+    
     #return h_buffer.last_buff_metric()
     
-
+#def __init__(self, name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0):
 
 queues = {}
 
-queues["Ticket"] = Queue('Ticket', 4, 2, 2, 5, 3, 4)
-queues["Student Service"] = Queue('Student Service', 3, 1, 5, 7)
-queues["Finance"] = Queue('Finance', 3, 1, 2, 3)
+queues["Q1"] = Queue('Q1', 2, 3, 2, 5, 2, 3)
+queues["Q2"] = Queue('Q2', 1, 3, 3, 5)
 
 
 topology = Topology()
-topology.Append(queues["Ticket"].name, queues["Student Service"].name, 0.8)
-topology.Append(queues["Student Service"].name, queues["Finance"].name, 0.5)
-topology.Append(queues["Finance"].name, queues["Student Service"].name, 0.3)
+topology.Append(queues["Q1"].name, queues["Q2"].name, 1)
+topology.Append(queues["Q2"].name, "", 0)
 
-Simulate(2.0, queues, topology)
+
+lst = [0.9921, 0.0004, 0.5534, 0.2761, 0.3398, 0.8963, 0.9023, 0.0132, 0.4569, 0.5121, 0.9208, 0.0171, 0.2299, 0.8545, 0.6001, 0.2921]
+
+Simulate(2.5, queues, topology, lst = lst.copy())
+
+# queues["Ticket"] = Queue('Ticket', 4, 2, 2, 5, 3, 4)
+# queues["Student Service"] = Queue('Student Service', 3, 1, 5, 7)
+# queues["Finance"] = Queue('Finance', 3, 1, 2, 3)
+
+
+# topology = Topology()
+# topology.Append(queues["Ticket"].name, queues["Student Service"].name, 0.8)
+# topology.Append(queues["Student Service"].name, queues["Finance"].name, 0.5)
+# topology.Append(queues["Finance"].name, queues["Student Service"].name, 0.3)
+
+# Simulate(2.0, queues, topology)
 
 #random.seed(10)
 '''
