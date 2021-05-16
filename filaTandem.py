@@ -1,6 +1,6 @@
 import random
 import argparse
-
+import Parser
 LOST = 0
 
 '''
@@ -421,16 +421,44 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
 
 queues = {}
 topology = Topology()
+seed = 0
+initial_time = 0
+queues_parsed, topo_parsed, seed, initial_time = Parser.Parse()
 
-# queues["Q1"] = Queue('Q1', 2, 3, 2, 5, 2, 3)
-# queues["Q2"] = Queue('Q2', 1, 3, 3, 5)
+
+############# FIZ AQUI UM PARSER QUE LE O INPUT.TXT E INSTANCIA AS FILAS E A TOPOLOGIA ##################
+
+## name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0
+for queue in queues_parsed:
+    name = queue["name"]
+    t_serv = int(queue["servers"])
+    s_queue = int(queue["capacity"])
+    minService = int(queue["minService"])
+    maxService = int(queue["maxService"])
+
+    
+    if "minArrival" not in queue:
+        
+    
+        queues[name] = Queue(name, t_serv, s_queue, minService, maxService)
+    else:
+        minArrival = int(queue["minArrival"])
+        maxArrival = int(queue["maxArrival"])
+        queues[name] = Queue(name, t_serv, s_queue, minService, maxService, minArrival, maxArrival)
+
+for topo in topo_parsed:
+    #for topo in element:
+    topology.Append(topo["source"], topo["target"], float(topo["probability"]))     
+
+for i in queues:
+    print(queues[i])
+
+print(topology)
+
+Simulate(initial_time, queues, topology)
 
 
-# topology.Append(queues["Q1"].name, queues["Q2"].name, 1)
-# topology.Append(queues["Q2"].name, "", 0)
-
-# Simulate(2.5, queues, topology, seed = 388)  
-
+'''
 n_queue = int(input("Numero de Filas:\n"))
 serv = 0
 cap = 0
@@ -478,7 +506,7 @@ seed = int(input("Qual a seed: "))
 int_time = float(input("Tempo inicial para chegada: "))
 
 Simulate(int_time, queues, topology, seed = seed)   
-        
+'''     
 
 # queues["Ticket"] = Queue('Ticket', 4, 2, 2, 5, 3, 4)
 # queues["Student Service"] = Queue('Student Service', 3, 1, 5, 7)

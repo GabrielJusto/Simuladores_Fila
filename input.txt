@@ -1,0 +1,27 @@
+-Seed: 5
+-Initital_time: 3
+
+-Queues
+
+name: queue_1
+capacity: 4
+servers: 1
+minService: 2
+maxService: 6
+minArrival: 3
+maxArrival: 5
+
+
+name: queue_2
+capacity: 2
+servers: 1
+minService: 1
+maxService: 5
+
+
+-Topology
+
+source: queue_1
+target:  queue_2
+probability: 0.7
+
