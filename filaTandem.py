@@ -1,7 +1,6 @@
 import random
 import argparse
 import Parser
-LOST = 0
 
 '''
    o ---->  o===== 1 ----> o======2
@@ -60,6 +59,7 @@ class Queue:
     maxService = 0
     counter = 0
     buffer = None
+    lost = 0
 
     def __init__(self, name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0):
         self.name = name
@@ -297,7 +297,6 @@ def GetNextDestiny(source_name, list_queues, random_number):
 
 
 def Entrance(queue, Scheduler, current_time, randoms, topo):
-    global LOST
     try:
         if queue.counter < queue.max_size:
             queue.counter += 1
@@ -308,7 +307,7 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
                 Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService, random_number))
 
         else:
-            LOST += 1
+            queue.lost += 1
                 
         Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival, randoms.lst.pop(0)))
     except:
@@ -320,7 +319,6 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
 
 
 def Exit(queue, Scheduler, current_time ,randoms, topo):
-    global LOST
     try:
         queue.counter-=1
         if queue.counter >= queue.total_servers:
@@ -332,7 +330,6 @@ def Exit(queue, Scheduler, current_time ,randoms, topo):
     queue.add_new("exit",current_time)
 
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
-    global LOST
     try:
         queue_source.counter -=1
 
@@ -348,7 +345,7 @@ def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
                 destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), random_number)
                 Scheduler.schedule(queue_target.name, destiny, current_time, randoms.get_next(queue_target.minService, queue_target.maxService, random_number))
         else:
-            LOST += 1
+            queue.lost += 1
     except:
         print("Terminou os Aleatórios!")
 
@@ -413,10 +410,10 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
     for key in queues:
         queues[key].buffer.print_Hbuffer()
         print("\n")
+        print(f"Processos Perdidos: {queue[key].lost}")
 
     scheduler.print_scheduler()
 
-    print(f"Processos Perdidos: {LOST}")
     
 
 queues = {}
@@ -432,7 +429,7 @@ queues_parsed, topo_parsed, seed, initial_time = Parser.Parse()
 for queue in queues_parsed:
     name = queue["name"]
     t_serv = int(queue["servers"])
-    s_queue = int(queue["capacity"])
+    s_queue = int(queue["capacity"]) if "capacity" not in queue else int('inf')
     minService = int(queue["minService"])
     maxService = int(queue["maxService"])
 
