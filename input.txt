@@ -1,15 +1,14 @@
 -Seed: 5
--Initital_time: 3
+-Initial_time: 3
 
 -Queues
 
 name: queue_1
-capacity: 4
 servers: 1
-minService: 2
-maxService: 6
-minArrival: 3
-maxArrival: 5
+minService: 5
+maxService: 7
+minArrival: 1
+maxArrival: 2
 
 
 name: queue_2

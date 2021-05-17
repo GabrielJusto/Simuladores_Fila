@@ -156,7 +156,12 @@ class Hbuffer:
     last_register = ()
     def __init__(self, name, max_size, count):
         self.clean_buffer()
-        states = [0] * (max_size + 1)
+        states = []
+        if max_size != float('inf'):
+            states = [0] * (max_size + 1)
+        else:
+            states = [0]
+
         self.last_register = (name, count, Queue.static_time, states, "-")
         self.buff.append(self.last_register)
 
@@ -177,14 +182,14 @@ class Hbuffer:
             else:    
                 diff = current_time - self.last_register[2]
 
-        
-        # print(self.last_register)
-        
         new_states =  self.last_register[3][:]
-        # print(new_states, type(new_states))
+        index_state = self.last_register[1] 
+        
+        
+        if len(new_states) <= index_state:
+            new_states.append(0)
 
-        # print("\n")
-        new_states[self.last_register[1]] += diff
+        new_states[index_state] += diff
 
         description = ""
 
@@ -311,7 +316,8 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
                 
         Scheduler.schedule(None , queue.name, current_time,  randoms.get_next(queue.minArrival, queue.maxArrival, randoms.lst.pop(0)))
     except:
-        print("Terminou a lista de aleatórios!")
+        aux = None
+        #print("Terminou a lista de aleatórios!")
 
     queue.add_new("entrance", current_time)
 
@@ -326,7 +332,8 @@ def Exit(queue, Scheduler, current_time ,randoms, topo):
             destiny = GetNextDestiny(queue.name, topo.GetTargets(queue.name), random_number) 
             Scheduler.schedule(queue.name, destiny, current_time, randoms.get_next(queue.minService, queue.maxService, random_number))
     except:
-        print("Terminou a lista de aleatórios!")
+        aux = None
+        #print("Terminou a lista de aleatórios!")
     queue.add_new("exit",current_time)
 
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
@@ -347,7 +354,8 @@ def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
         else:
             queue.lost += 1
     except:
-        print("Terminou os Aleatórios!")
+        aux = None
+        #print("Terminou os Aleatórios!")
 
     queue_source.add_new("tandem",current_time, queue_target.name, order = True)
     queue_target.add_new("tandem",current_time, queue_source.name, order = False)
@@ -381,11 +389,9 @@ def last_resgister_buff(queues):
 
 
 
-def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt = False):
+def Simulate(initial_time, queues, topo, seed = 0, size = 10, lst = None, prt = False):
 
     scheduler = Scheduler()
-    
-    #h_buffer = Hbuffer('-', queue, 0)
     
     randoms = RandomNumbers(seed, size, lst)
     entrances  = search_entrances(queues)
@@ -410,9 +416,9 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100, lst = None, prt =
     for key in queues:
         queues[key].buffer.print_Hbuffer()
         print("\n")
-        print(f"Processos Perdidos: {queue[key].lost}")
+        print(f"Processos Perdidos: {queues[key].lost}")
 
-    scheduler.print_scheduler()
+    #scheduler.print_scheduler()
 
     
 
@@ -429,7 +435,7 @@ queues_parsed, topo_parsed, seed, initial_time = Parser.Parse()
 for queue in queues_parsed:
     name = queue["name"]
     t_serv = int(queue["servers"])
-    s_queue = int(queue["capacity"]) if "capacity" not in queue else int('inf')
+    s_queue = int(queue["capacity"]) if "capacity" in queue else float('inf')
     minService = int(queue["minService"])
     maxService = int(queue["maxService"])
 
