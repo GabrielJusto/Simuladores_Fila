@@ -1,26 +1,67 @@
--Seed: 5
--Initial_time: 3
+-Seed: 0
+-Initial_time: 1
 
 -Queues
 
-name: queue_1
-servers: 1
-minService: 5
-maxService: 7
+name: Bilheteria
+capacity: 7
+servers: 3 
+minService: 2
+maxService: 6
 minArrival: 1
-maxArrival: 2
+maxArrival: 3
 
+name: Conveniencia
+capacity: 4
+servers: 2
+minService: 4
+maxService: 9
 
-name: queue_2
-capacity: 2
+name: Fila
 servers: 1
 minService: 1
-maxService: 5
+maxService: 2
+
+name: Filme
+servers: 200
+minService: 30
+maxService: 120
 
 
 -Topology
 
-source: queue_1
-target:  queue_2
+source: Bilheteria
+target:  Conveniencia
+probability: 0.6
+
+source: Bilheteria
+target:  Fila
+probability: 0.3
+
+source: Conveniencia
+target:  Fila
 probability: 0.7
+
+source: Conveniencia
+target:  Filme
+probability: 0.25
+
+source: Fila
+target:  Conveniencia
+probability: 0.2
+
+source: Fila
+target:  Filme
+probability: 0.8
+
+source: Filme
+target:  Conveniencia
+probability: 0.05
+
+
+
+
+
+
+
 

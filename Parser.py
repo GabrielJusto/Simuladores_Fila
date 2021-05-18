@@ -55,6 +55,7 @@ def Parse():
         with open(filename) as f:
             content = f.read().splitlines()
 
+        randoms = []
         aux = {}
         queues = []
         topos = []
@@ -71,6 +72,10 @@ def Parse():
                 line = line.strip('-Seed:')
                 line = line.strip(' ')
                 seed = float(line)
+            elif "Random" in line:
+                line = line.strip('-Random:')
+                line = line.strip(' ')
+                randoms = [float(i) for i in line.split(" ")]
             elif "Queue" in line:
                 is_queue = True
                 ia_topo = False
@@ -151,4 +156,4 @@ def Parse():
                 else:
                     print('\t' + str(key) + ' ' + str(element[key]))
         '''
-        return queues, topos, seed, initial_time
+        return queues, topos, seed, initial_time, randoms

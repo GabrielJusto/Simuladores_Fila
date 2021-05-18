@@ -216,6 +216,14 @@ class Hbuffer:
                 print(" {0:^6,.3f} ".format(j), end="")
             print("]")
     
+    def print_last_register(self):
+        i = self.last_register
+        print("{0:>6} {1:>9,.3f}  [".format(i[1],i[2]), end="")
+        #print(i[0] + " " + str(i[1]) + " " + str( round(i[2], 3) ), end = "")
+        for j in i[3]:
+            print(" {0:^6,.3f} ".format(j), end="")
+        print("]")
+
     def return_answer(self):
         return self.last_register
 
@@ -232,11 +240,11 @@ class RandomNumbers:
     lst = []
     ast = False
 
-    def __init__(self, seed, size ,lst):
-        if lst == None:
+    def __init__(self, seed, size, rand_lst):
+        if rand_lst == []:
             self.generate_list(seed, size)
         else:
-            self.lst = lst
+            self.lst = rand_lst.copy()
             self.ast = True
         
     def generate_list(self, seed, size):
@@ -352,7 +360,7 @@ def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
                 destiny = GetNextDestiny(queue_target.name, topo.GetTargets(queue_target.name), random_number)
                 Scheduler.schedule(queue_target.name, destiny, current_time, randoms.get_next(queue_target.minService, queue_target.maxService, random_number))
         else:
-            queue.lost += 1
+            queue_target.lost += 1
     except:
         aux = None
         #print("Terminou os Aleatórios!")
@@ -387,10 +395,7 @@ def last_resgister_buff(queues):
             queues[queue].add_new("END", higher, order= False)
         
 
-
-
-def Simulate(initial_time, queues, topo, seed = 0, size = 10, lst = None, prt = False):
-
+def Simulate(initial_time, queues, topo, seed = 0, size = 100000, lst = []):
     scheduler = Scheduler()
     
     randoms = RandomNumbers(seed, size, lst)
@@ -414,19 +419,21 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 10, lst = None, prt = 
 
     last_resgister_buff(queues)
     for key in queues:
-        queues[key].buffer.print_Hbuffer()
-        print("\n")
-        print(f"Processos Perdidos: {queues[key].lost}")
+        #queues[key].buffer.print_Hbuffer()
+        print(key, end = " ")
+        queues[key].buffer.print_last_register()
+        
+        print(f"\nProcessos Perdidos {key}: {queues[key].lost}\n")
 
     #scheduler.print_scheduler()
 
     
-
+randoms = []
 queues = {}
 topology = Topology()
 seed = 0
 initial_time = 0
-queues_parsed, topo_parsed, seed, initial_time = Parser.Parse()
+queues_parsed, topo_parsed, seed, initial_time, randoms = Parser.Parse()
 
 
 ############# FIZ AQUI UM PARSER QUE LE O INPUT.TXT E INSTANCIA AS FILAS E A TOPOLOGIA ##################
@@ -436,21 +443,20 @@ for queue in queues_parsed:
     name = queue["name"]
     t_serv = int(queue["servers"])
     s_queue = int(queue["capacity"]) if "capacity" in queue else float('inf')
-    minService = int(queue["minService"])
-    maxService = int(queue["maxService"])
+    minService = float(queue["minService"])
+    maxService = float(queue["maxService"])
 
     
     if "minArrival" not in queue:
-        
-    
         queues[name] = Queue(name, t_serv, s_queue, minService, maxService)
     else:
-        minArrival = int(queue["minArrival"])
-        maxArrival = int(queue["maxArrival"])
+        minArrival = float(queue["minArrival"])
+        maxArrival = float(queue["maxArrival"])
         queues[name] = Queue(name, t_serv, s_queue, minService, maxService, minArrival, maxArrival)
 
 for topo in topo_parsed:
     #for topo in element:
+    
     topology.Append(topo["source"], topo["target"], float(topo["probability"]))     
 
 for i in queues:
@@ -458,7 +464,12 @@ for i in queues:
 
 print(topology)
 
-Simulate(initial_time, queues, topology)
+for key in queues:
+    if key not in topology.topo.keys():
+        topology.Append(key, key, 0)
+
+
+Simulate(initial_time, queues, topology, seed = seed, lst = randoms)
 
 
 '''
