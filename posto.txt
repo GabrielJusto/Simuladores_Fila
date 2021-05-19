@@ -1,0 +1,67 @@
+-Seed: 3154
+-Initial_time: 2.2
+
+-Queues
+
+name: Bomba
+servers: 3 
+minService: 3
+maxService: 6
+minArrival: 1
+maxArrival: 3
+
+name: Lavagem
+capacity: 3
+servers: 1 
+minService: 10
+maxService: 20
+
+name: Pneu
+capacity: 3
+servers: 1 
+minService: 5
+maxService: 7
+
+name: Loja
+capacity: 7
+servers: 3 
+minService: 5
+maxService: 15
+
+
+-Topology
+
+source: Bomba
+target: Lavagem
+probability: 0.2
+
+source: Bomba
+target: Loja
+probability: 0.5
+
+source: Bomba
+target: Pneu
+probability: 0.3
+
+source: Lavagem
+target: Pneu
+probability: 0.3
+
+source: Lavagem
+target: Loja
+probability: 0.7
+
+source: Pneu
+target: Lavagem
+probability: 0.15
+
+source: Pneu
+target: Loja
+probability: 0.85
+
+
+
+
+
+
+

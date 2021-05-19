@@ -1,53 +1,14 @@
 import random
 import argparse
 import Parser
+import sys
 
 '''
-   o ---->  o===== 1 ----> o======2
-                     '
-                     '---> saída
-
-FUNÇÃO 1
-queue_1.counter -= 1
-    if queue_1.counter >= queue_1.total_servers:
-        if Sort((0,1)) >= psbl_events['SA1']: <---- saída
-            scheduler.schedule('SA1')
-        else:
-            scheduler.scheduler('P12') <--- próxima entrada
-    
-                      --> saída (10%)
-                     '
-                     '
-    o ---->  o===== 1 ----> o======== 2 (80%)
-                     '
-                     '-->   o======= 3 (10%)
-                     
-
-FUNÇÃO 2
-queue_1.counter -= 1
-    if queue_1.counter >= queue_1.total_servers:
-        if Sort((0,1)) >= psbl_events['P12']: <---- entrada 1
-            scheduler.schedule('SA1')
-        elsif Sort((0,1)) >= psbl_events['P13']::
-            scheduler.scheduler('P12') <--- entrada 2
-        else:
-            scheduler.scheduler('SA1') <--- saída
-
-Q1:{(Q2, 0, 10), (Q3, 11,20),  20:Q3, 0:OUT}
-
- Q1 {(q2, 10%), () .. }--> 0 - 10
- Q1 (q3, 10%) --> 10 - 20
- Q1 (out, 80%) --> 20 - 100
-
- z > q2 > y > q3 > x > out
-numero = 0.01
-enquanto( element : dicionário)
-    numero >= element.prob():
-        return
+Classe Queue guarda todos os atributos das filas
+] 
 '''
-
 class Queue:
-    #static
+    #static_time é um valor statico da classe
     static_time = 0
      
     name = ""
@@ -58,7 +19,7 @@ class Queue:
     minService = 0
     maxService = 0
     counter = 0
-    buffer = None
+    buffer = None 
     lost = 0
 
     def __init__(self, name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0):
@@ -69,23 +30,23 @@ class Queue:
         self.maxArrival = maxArrival
         self.minService = minService
         self.maxService = maxService
-        self.buffer = Hbuffer(self.name,self.max_size, self.counter)
+        self.buffer = Hbuffer(self.name,self.max_size, self.counter) 
 
     def __str__(self):
         return 'name: ' + self.name + '\ncapacity: ' + str(self.max_size) +  '\nsize queue: ' +  str(self.counter)+'\nservers: ' + str(self.total_servers) +'\narrival time: ' + str(self.minArrival) + '-' + str(self.maxArrival) + 's' + '\nservice time: ' +  str(self.minService) + '-' +  str(self.maxService) + 's\n'
 
     def add_new(self, function, current_time, s_queue = None, order = True):
         self.buffer.add_new(self.name, self.counter, current_time, function,s_queue, order)
-
+'''
+Escalonador guarda registro dos eventos até serem executados
+'''
 class Scheduler:
     s_buffer = []
     str_buffer = []
     
     def schedule(self, queue_source, queue_target, global_time, sort):
-        #print("new event:", (event_desc, float(global_time + sort), float(sort)))
         self.s_buffer.append((queue_source, queue_target, float(global_time + sort), float(sort)))
         self.str_buffer.append((queue_source, queue_target, float(global_time + sort), float(sort)))
-        #print(self.s_buffer[len(self.s_buffer)-1])
 
     def next_action(self):
         min_time = float("inf")
@@ -103,52 +64,24 @@ class Scheduler:
         except:
             print("Erro index not found:", min_index)
             return None
-    
-    # def __str__(self):
-    #     output = ''
-    #     for i in self.s_buffer:
-    #         output += str(i) + '\n'
-    #     return output
-    
+
     def print_scheduler(self):
-        #output = ""
         i = 1
         for action in self.str_buffer:
-            # print("{0:<35} {1:>6} {2:>9,.3f}  [".format(i[4],i[1],i[2]), end="")
             if action[0] == None and "exit" not in action[1]:
                 print("("+str(i)+")entr {0:<15} {1:>6,.4f} {2:>9,.4f}".format(action[1], action[2],action[3]))
-                #output += "("+str(i)+")"+"entrance "+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
                 
             elif not "exit" in action[1] and not "exit" in action[0]:
                 print("("+str(i)+"){0:<1}-> {1:<15} {2:>6,.4f} {3:>9,.4f}".format(action[0],action[1], action[2],action[3]))
-                #output += "("+str(i)+")"+str(action[0])+" -> "+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
             
             else:
-                #output += "("+str(i)+")"+str(action[1])+", "+str(action[2])+", "+str(action[3])+"\n"
                 print("("+str(i)+"){0:<20} {1:>6,.4f} {2:>9,.4f}".format(action[1], action[2],action[3]))
             i+=1
     
 
 '''
-class Event:
-    description =  ""
-    min_time = 0
-    max_time = 0
-    prob_higher_then = 0
-
-    def __init__(self, desc, min_t, max_t, p_h_t):
-        self.description = desc
-        self.min_time = min_t
-        self.max_time = max_t
-        self.prob_higher_then = p_h_t
-    
-    def probability(self):
-        return self.prob_higher_then
-
-    def range(self):
-        return (self.min_time, self.max_time)
+Guarda os registros executados de cada fila
 '''
-
 class Hbuffer:
     lst_ordem = []
 
@@ -157,6 +90,7 @@ class Hbuffer:
     def __init__(self, name, max_size, count):
         self.clean_buffer()
         states = []
+        #Se a fila for infinita inicializa com um vetor de apenas 1 posição
         if max_size != float('inf'):
             states = [0] * (max_size + 1)
         else:
@@ -166,10 +100,9 @@ class Hbuffer:
         self.buff.append(self.last_register)
 
     def add_new(self, name, queue_count, current_time, funtion, s_queue, order):
-        # print(event + ' queue count ', queue_count)
-        # print(funtion, target)
 
         diff = 0
+        # Controle se a fila está execuntando o método tandem
         if order:
             if self.last_register[-1] == '-':
                 diff = current_time
@@ -185,7 +118,7 @@ class Hbuffer:
         new_states =  self.last_register[3][:]
         index_state = self.last_register[1] 
         
-        
+        #Se a fila for infinita, aumenta o limite 
         if len(new_states) <= index_state:
             new_states.append(0)
 
@@ -193,6 +126,7 @@ class Hbuffer:
 
         description = ""
 
+        #auxiliar de Log
         if funtion == "tandem":
             if order:
                 description += name + " -> "+ s_queue
@@ -210,19 +144,21 @@ class Hbuffer:
 
     def print_Hbuffer(self):
         for i in self.buff:
-            print("{0:<35} {1:>6} {2:>9,.3f}  [".format(i[4],i[1],i[2]), end="")
-        #print(i[0] + " " + str(i[1]) + " " + str( round(i[2], 3) ), end = "")
+            print("{0:<35} {1:>6} {2:>9.3f}  [".format(i[4],i[1],i[2]), end="")
             for j in i[3]:
                 print(" {0:^6,.3f} ".format(j), end="")
             print("]")
     
     def print_last_register(self):
         i = self.last_register
-        print("{0:>6} {1:>9,.3f}  [".format(i[1],i[2]), end="")
-        #print(i[0] + " " + str(i[1]) + " " + str( round(i[2], 3) ), end = "")
+        print("|| {0:<8}|| {1:<5}|| {2:<12} |".format("Nome","Fila","Tempo"), end="")
+        for j in range(len(i[3])):
+            print("| {0:^12} |".format("Est."+str(j)), end="")
+        print("| {0:<9}||".format("Perdidos"))
+        print("|| {0:<8}|| {1:<5}|| {2:<12.3f} |".format(i[0],i[1],i[2]), end="")
         for j in i[3]:
-            print(" {0:^6,.3f} ".format(j), end="")
-        print("]")
+            print("| {0:^12.3f} |".format(j), end="")
+        print("|", end= "")
 
     def return_answer(self):
         return self.last_register
@@ -235,12 +171,18 @@ class Hbuffer:
         self.buff = []
         self.last_register = ()
 
-
+'''
+Gerador de numeros aleatórios
+a = 651
+M = 15619
+C = 4
+'''
 class RandomNumbers:
     lst = []
     ast = False
 
     def __init__(self, seed, size, rand_lst):
+        #Pode receber uma lista de aleatórios
         if rand_lst == []:
             self.generate_list(seed, size)
         else:
@@ -261,7 +203,9 @@ class RandomNumbers:
     def get_next(self, minArrival, maxArrival, value):
         return float(((maxArrival - minArrival) * value + minArrival))
     
-
+'''
+Gera a topologia das filas
+'''
 class Topology:
     topo = {} #source: list (target, probability)
 
@@ -292,7 +236,9 @@ class Topology:
                     output += 'exit ' + str(int((1-sum_prob)*100)) + '% | '
             output += '\n'
         return output
-        
+'''
+Calcula a probabilidade do proximo destino
+'''
 def GetNextDestiny(source_name, list_queues, random_number):
     accumulator_1 = 0
     accumulator_2 = 0
@@ -308,7 +254,9 @@ def GetNextDestiny(source_name, list_queues, random_number):
     return 'exit ' + source_name
 
 
-
+'''
+Método de entrada Fila
+'''
 def Entrance(queue, Scheduler, current_time, randoms, topo):
     try:
         if queue.counter < queue.max_size:
@@ -331,7 +279,9 @@ def Entrance(queue, Scheduler, current_time, randoms, topo):
 
     
 
-
+'''
+Método de Saida da Fila
+'''
 def Exit(queue, Scheduler, current_time ,randoms, topo):
     try:
         queue.counter-=1
@@ -344,6 +294,10 @@ def Exit(queue, Scheduler, current_time ,randoms, topo):
         #print("Terminou a lista de aleatórios!")
     queue.add_new("exit",current_time)
 
+
+'''
+Método de transição entre filas
+'''
 def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
     try:
         queue_source.counter -=1
@@ -363,16 +317,13 @@ def Tandem(queue_source, queue_target, Scheduler, current_time, randoms, topo):
             queue_target.lost += 1
     except:
         aux = None
-        #print("Terminou os Aleatórios!")
 
     queue_source.add_new("tandem",current_time, queue_target.name, order = True)
     queue_target.add_new("tandem",current_time, queue_source.name, order = False)
 
-    #entrada
-    #Saida
-    #Q1 -> Q2
-
-
+'''
+Busca por entradas para inicializar a simulação
+'''
 def search_entrances(queues):
     entrances = []
 
@@ -382,6 +333,9 @@ def search_entrances(queues):
 
     return entrances
 
+'''
+Adiciona um "END" na final de todas as filas, ajustando o tempo em todas, quando termina a execução
+'''
 def last_resgister_buff(queues):
     higher = 0
     high_q = None
@@ -394,7 +348,9 @@ def last_resgister_buff(queues):
         if queues[queue] != high_q:
             queues[queue].add_new("END", higher, order= False)
         
-
+'''
+Onde ocorre a simulação
+'''
 def Simulate(initial_time, queues, topo, seed = 0, size = 100000, lst = []):
     scheduler = Scheduler()
     
@@ -418,22 +374,28 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100000, lst = []):
             Exit(queues[n_action[0]], scheduler, time, randoms, topo)
 
     last_resgister_buff(queues)
+    total_perdidos = 0
     for key in queues:
         #queues[key].buffer.print_Hbuffer()
-        print(key, end = " ")
         queues[key].buffer.print_last_register()
-        
-        print(f"\nProcessos Perdidos {key}: {queues[key].lost}\n")
+        total_perdidos += queues[key].lost
+        print(" {0:^9}||\n".format(queues[key].lost))
 
+    print(f"Total de processos perdidos: {total_perdidos}")
     #scheduler.print_scheduler()
 
-    
+if len(sys.argv) <= 1:
+    print("ERROR!!!!! Precisa-se de argumento")
+    quit()
+
+arg = sys.argv[1]
+
 randoms = []
 queues = {}
 topology = Topology()
 seed = 0
 initial_time = 0
-queues_parsed, topo_parsed, seed, initial_time, randoms = Parser.Parse()
+queues_parsed, topo_parsed, seed, initial_time, randoms = Parser.Parse(arg)
 
 
 ############# FIZ AQUI UM PARSER QUE LE O INPUT.TXT E INSTANCIA AS FILAS E A TOPOLOGIA ##################

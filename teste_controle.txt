@@ -1,0 +1,48 @@
+-Seed: 3154
+-Initial_time: 2
+
+-Queues
+
+name: F1
+servers: 1 
+minService: 1
+maxService: 1.5
+minArrival: 1
+maxArrival: 4
+
+name: F2
+capacity: 5
+servers: 3 
+minService: 5
+maxService: 10
+
+name: F3
+capacity: 8
+servers: 2 
+minService: 10
+maxService: 20
+
+
+-Topology
+
+source: F1
+target: F2
+probability: 0.8
+
+source: F1
+target: F3
+probability: 0.2
+
+source: F2
+target: F1
+probability: 0.3
+
+source: F2
+target: F3
+probability: 0.5
+
+source: F3
+target: F2
+probability: 0.7
+
+

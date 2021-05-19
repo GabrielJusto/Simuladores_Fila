@@ -38,8 +38,8 @@ probability: <prob>
 
 
 import os.path
-def Parse():
-    filename = "input.txt"
+def Parse(arg):
+    filename = arg
 
 
 
