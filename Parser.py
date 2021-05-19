@@ -1,5 +1,8 @@
 '''
- ## TEXT FORMAT ##
+ ## INPUT FORMAT ##
+-Seed: <Seed>
+-Initial_time: <Initial Time>
+-Random: <n1> <n2> <n3> <n4> <n5>
 
 -Queues
 

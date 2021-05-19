@@ -5,7 +5,6 @@ import sys
 
 '''
 Classe Queue guarda todos os atributos das filas
-] 
 '''
 class Queue:
     #static_time é um valor statico da classe
