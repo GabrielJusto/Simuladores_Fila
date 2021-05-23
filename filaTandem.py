@@ -79,7 +79,7 @@ class Scheduler:
     
 
 '''
-Guarda os registros executados de cada fila
+Guarda os eventos executados de cada fila
 '''
 class Hbuffer:
     lst_ordem = []
@@ -333,7 +333,7 @@ def search_entrances(queues):
     return entrances
 
 '''
-Adiciona um "END" na final de todas as filas, ajustando o tempo em todas, quando termina a execução
+Ajusta registros de filas que acabaram antes, adicionando mais um evento chamado 'END' para atualizar valores dos estados na fila.
 '''
 def last_resgister_buff(queues):
     higher = 0
@@ -358,17 +358,18 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100000, lst = []):
     for entrance in entrances:
         scheduler.schedule(None, entrance.name, initial_time, 0)
     
+    #Enquanto a lista de aleatórios não estiver vazia, busca um próximo evento no Scheduler para ser computado.
     while(len(randoms.lst) > 0):   
         n_action = scheduler.next_action()
         time = n_action[2]
 
-
+	#Se o evento for de Entrada
         if n_action[0] == None and "exit" not in n_action[1]:
             Entrance(queues[n_action[1]], scheduler, time, randoms, topo)
-            
+        #Evento Saída
         elif not "exit" in n_action[1] and not "exit" in n_action[0]:
             Tandem(queues[n_action[0]], queues[n_action[1]], scheduler, time, randoms, topo)
-        
+        #Evento Tandem: Saída de uma fila para entrada noutra
         else:
             Exit(queues[n_action[0]], scheduler, time, randoms, topo)
 
@@ -383,8 +384,10 @@ def Simulate(initial_time, queues, topo, seed = 0, size = 100000, lst = []):
     print(f"Total de processos perdidos: {total_perdidos}")
     #scheduler.print_scheduler()
 
+
 if len(sys.argv) <= 1:
-    print("ERROR!!!!! Precisa-se de argumento")
+    print("Número de argumentos insufuficiente!")
+    print("Entrada deve ter o formato: filaTandem.py <arquivo_entrada.txt>")
     quit()
 
 arg = sys.argv[1]
@@ -396,9 +399,9 @@ seed = 0
 initial_time = 0
 queues_parsed, topo_parsed, seed, initial_time, randoms = Parser.Parse(arg)
 
-
-############# FIZ AQUI UM PARSER QUE LE O INPUT.TXT E INSTANCIA AS FILAS E A TOPOLOGIA ##################
-
+'''
+Instancia as estruturas Queue e Topology
+'''
 ## name,t_serv, s_queue, minService, maxService, minArrival = 0, maxArrival = 0
 for queue in queues_parsed:
     name = queue["name"]
@@ -430,68 +433,8 @@ for key in queues:
         topology.Append(key, key, 0)
 
 
+#Execução da Simulação
 Simulate(initial_time, queues, topology, seed = seed, lst = randoms)
 
 
-'''
-n_queue = int(input("Numero de Filas:\n"))
-serv = 0
-cap = 0
-minArr = 0
-maxArr = 0
-minServ = 0
-maxServ = 0
-
-for i in range(n_queue):
-    print(f'Fila {i+1}:')
-    serv = int(input("Numero de Servidores: "))
-    cap = int(input("Capacidade: "))
-    minServ = float(input("Min Serviço: "))
-    minServ = float(input("Max Serviço: "))
-    if i == 0:
-        print("Como é a primeira fila:")
-        minArr = float(input("Min Chegada: "))
-        minArr = float(input("Max Chegada: "))
-    queues["Q"+str(i+1)] = Queue("Q"+str(i+1),serv,cap,minServ, maxServ, minArr, maxArr)
-    minArr = 0
-    maxArr = 0
-q_1 = ""
-q_2 = ""
-perc = 0
-x = ""
-control = True
-
-if n_queue > 1:
-    while(control):
-        print("\nTopologia(Digite Apenas o numeros)")
-        q_1 = input("De qual Fila Sai?\n")
-        q_2 = input("Pra qual Fila entra?\n")
-        perc = float(input("Qual a probabilidade?(numero entre 0 e 1)\n"))
-        x = input("Terminou a Topologia!(reponder y ou n)\n")
-        if x.upper() == "Y":
-            control = False
-        topology.Append(queues["Q"+q_1].name, queues["Q"+q_2].name, perc)
-
-for q in queues:
-     topology.Append(queues[q].name, "", 0)
-
-
-seed = int(input("Qual a seed: "))
-
-int_time = float(input("Tempo inicial para chegada: "))
-
-Simulate(int_time, queues, topology, seed = seed)   
-'''     
-
-# queues["Ticket"] = Queue('Ticket', 4, 2, 2, 5, 3, 4)
-# queues["Student Service"] = Queue('Student Service', 3, 1, 5, 7)
-# queues["Finance"] = Queue('Finance', 3, 1, 2, 3)
-
-
-# topology = Topology()
-# topology.Append(queues["Ticket"].name, queues["Student Service"].name, 0.8)
-# topology.Append(queues["Student Service"].name, queues["Finance"].name, 0.5)
-# topology.Append(queues["Finance"].name, queues["Student Service"].name, 0.3)
-
-# Simulate(2.0, queues, topology)
 
